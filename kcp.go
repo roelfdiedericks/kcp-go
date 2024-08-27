@@ -45,7 +45,7 @@ const (
 	IKCP_ACK_FAST    = 3
 	IKCP_INTERVAL    = 100
 	IKCP_OVERHEAD    = 24
-	IKCP_DEADLINK    = 20
+	IKCP_DEADLINK    = 200 //rodent, 20 seems to low
 	IKCP_THRESH_INIT = 2
 	IKCP_THRESH_MIN  = 2
 	IKCP_PROBE_INIT  = 7000   // 7 secs to probe window size
@@ -148,6 +148,7 @@ func (seg *segment) encode(ptr []byte) []byte {
 	ptr = ikcp_encode32u(ptr, seg.una)
 	ptr = ikcp_encode32u(ptr, uint32(len(seg.data)))
 	atomic.AddUint64(&DefaultSnmp.OutSegs, 1)
+	
 	return ptr
 }
 
@@ -176,6 +177,7 @@ type KCP struct {
 
 	buffer []byte
 	output output_callback
+	snmp Snmp
 }
 
 type ackItem struct {
@@ -608,6 +610,7 @@ func (kcp *KCP) Input(data []byte, regular, ackNoDelay bool) int {
 			}
 			if regular && repeat {
 				atomic.AddUint64(&DefaultSnmp.RepeatSegs, 1)
+				atomic.AddUint64(&kcp.snmp.RepeatSegs, 1)
 			}
 		} else if cmd == IKCP_CMD_WASK {
 			// ready to send back IKCP_CMD_WINS in Ikcp_flush
@@ -623,6 +626,7 @@ func (kcp *KCP) Input(data []byte, regular, ackNoDelay bool) int {
 		data = data[length:]
 	}
 	atomic.AddUint64(&DefaultSnmp.InSegs, inSegs)
+	atomic.AddUint64(&kcp.snmp.InSegs, inSegs)
 
 	// update rtt with the latest ts
 	// ignore the FEC packet
@@ -712,6 +716,7 @@ func (kcp *KCP) flush(ackOnly bool) uint32 {
 		if _itimediff(ack.sn, kcp.rcv_nxt) >= 0 || len(kcp.acklist)-1 == i {
 			seg.sn, seg.ts = ack.sn, ack.ts
 			ptr = seg.encode(ptr)
+			atomic.AddUint64(&kcp.snmp.OutSegs, 1)
 		}
 	}
 	kcp.acklist = kcp.acklist[0:0]
@@ -750,6 +755,7 @@ func (kcp *KCP) flush(ackOnly bool) uint32 {
 		seg.cmd = IKCP_CMD_WASK
 		makeSpace(IKCP_OVERHEAD)
 		ptr = seg.encode(ptr)
+		atomic.AddUint64(&kcp.snmp.OutSegs, 1)
 	}
 
 	// flush window probing commands
@@ -757,6 +763,7 @@ func (kcp *KCP) flush(ackOnly bool) uint32 {
 		seg.cmd = IKCP_CMD_WINS
 		makeSpace(IKCP_OVERHEAD)
 		ptr = seg.encode(ptr)
+		atomic.AddUint64(&kcp.snmp.OutSegs, 1)
 	}
 
 	kcp.probe = 0
@@ -843,6 +850,7 @@ func (kcp *KCP) flush(ackOnly bool) uint32 {
 			need := IKCP_OVERHEAD + len(segment.data)
 			makeSpace(need)
 			ptr = segment.encode(ptr)
+			atomic.AddUint64(&kcp.snmp.OutSegs, 1)
 			copy(ptr, segment.data)
 			ptr = ptr[len(segment.data):]
 
@@ -862,19 +870,23 @@ func (kcp *KCP) flush(ackOnly bool) uint32 {
 
 	// counter updates
 	sum := lostSegs
-	if lostSegs > 0 {
+	if lostSegs > 0 {		
 		atomic.AddUint64(&DefaultSnmp.LostSegs, lostSegs)
+		atomic.AddUint64(&kcp.snmp.LostSegs, lostSegs)
 	}
 	if fastRetransSegs > 0 {
 		atomic.AddUint64(&DefaultSnmp.FastRetransSegs, fastRetransSegs)
+		atomic.AddUint64(&kcp.snmp.FastRetransSegs, fastRetransSegs)
 		sum += fastRetransSegs
 	}
 	if earlyRetransSegs > 0 {
 		atomic.AddUint64(&DefaultSnmp.EarlyRetransSegs, earlyRetransSegs)
+		atomic.AddUint64(&kcp.snmp.EarlyRetransSegs, earlyRetransSegs)
 		sum += earlyRetransSegs
 	}
 	if sum > 0 {
 		atomic.AddUint64(&DefaultSnmp.RetransSegs, sum)
+		atomic.AddUint64(&kcp.snmp.RetransSegs, sum)
 	}
 
 	// cwnd update

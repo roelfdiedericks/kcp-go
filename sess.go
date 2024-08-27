@@ -692,6 +692,13 @@ func (s *UDPSession) update() {
 // GetConv gets conversation id of a session
 func (s *UDPSession) GetConv() uint32 { return s.kcp.conv }
 
+// GetState gets the kcp state of a sessions
+// mostly useful for "dead" state = 0xFFFFFFFF dead_link after 20 unacks ?
+func (s *UDPSession) GetState() uint32 { return s.kcp.state }
+
+// GetSnmp gets the snmp table of a session
+func (s *UDPSession) GetSnmp() *Snmp { return &s.kcp.snmp }
+
 // GetRTO gets current rto of the session
 func (s *UDPSession) GetRTO() uint32 {
 	s.mu.Lock()
@@ -1065,6 +1072,7 @@ func (l *Listener) closeSession(remote net.Addr) (ret bool) {
 	l.sessionLock.Lock()
 	defer l.sessionLock.Unlock()
 	if _, ok := l.sessions[remote.String()]; ok {
+		l.sessions[remote.String()].Close()
 		delete(l.sessions, remote.String())
 		return true
 	}
