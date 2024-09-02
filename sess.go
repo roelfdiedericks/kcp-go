@@ -696,6 +696,11 @@ func (s *UDPSession) GetConv() uint32 { return s.kcp.conv }
 // mostly useful for "dead" state = 0xFFFFFFFF dead_link after 20 unacks ?
 func (s *UDPSession) GetState() uint32 { return s.kcp.state }
 
+// GetSegmentSize gets the size in bytes of kcp segment
+func (s *UDPSession) GetSegmentSize() uint32 { 
+	return s.kcp.GetSegmentSize()
+}
+
 // GetSnmp gets the snmp table of a session
 func (s *UDPSession) GetSnmp() *Snmp { return &s.kcp.snmp }
 

@@ -26,6 +26,7 @@ import (
 	"encoding/binary"
 	"sync/atomic"
 	"time"
+	"unsafe"
 )
 
 const (
@@ -209,11 +210,17 @@ func NewKCP(conv uint32, output output_callback) *KCP {
 	return kcp
 }
 
+func (kcp *KCP) GetSegmentSize() uint32 {
+	var seg segment
+	return uint32(unsafe.Sizeof(seg))
+}
+
 // newSegment creates a KCP segment
 func (kcp *KCP) newSegment(size int) (seg segment) {
 	seg.data = xmitBuf.Get().([]byte)[:size]
 	return
 }
+
 
 // delSegment recycles a KCP segment
 func (kcp *KCP) delSegment(seg *segment) {
