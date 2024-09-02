@@ -401,6 +401,10 @@ func (enc *fecEncoder) encode(b []byte, rto uint32) (ps [][]byte) {
 					ps[k] = ps[k][:enc.maxSize]
 				}
 			}
+		} else {
+			// through we do not send non-continuous parity shard, we still increase the next value
+			// to keep the seqid aligned with 0 start
+			enc.next = (enc.next + uint32(enc.parityShards)) % enc.paws
 		}
 
 		// counters resetting
@@ -416,12 +420,11 @@ func (enc *fecEncoder) encode(b []byte, rto uint32) (ps [][]byte) {
 func (enc *fecEncoder) markData(data []byte) {
 	binary.LittleEndian.PutUint32(data, enc.next)
 	binary.LittleEndian.PutUint16(data[4:], typeData)
-	enc.next++
+	enc.next = (enc.next + 1) % enc.paws
 }
 
 func (enc *fecEncoder) markParity(data []byte) {
 	binary.LittleEndian.PutUint32(data, enc.next)
 	binary.LittleEndian.PutUint16(data[4:], typeParity)
-	// sequence wrap will only happen at parity shard
 	enc.next = (enc.next + 1) % enc.paws
 }

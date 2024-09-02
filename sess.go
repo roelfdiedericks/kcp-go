@@ -83,6 +83,7 @@ const (
 var (
 	errInvalidOperation = errors.New("invalid operation")
 	errTimeout          = errors.New("timeout")
+	errNotOwner         = errors.New("not the owner of this connection")
 )
 
 var (
@@ -590,6 +591,18 @@ func (s *UDPSession) SetWriteBuffer(bytes int) error {
 	return errInvalidOperation
 }
 
+// Control applys a procedure to the underly socket fd.
+// CAUTION: BE VERY CAREFUL TO USE THIS FUNCTION, YOU MAY BREAK THE PROTOCOL.
+func (s *UDPSession) Control(f func(conn net.PacketConn) error) error {
+	if !s.ownConn {
+		return errNotOwner
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return f(s.conn)
+}
+
 // a goroutine to handle post processing of kcp and make the critical section smaller
 // pipeline for outgoing packets (from ARQ to network)
 //
@@ -597,6 +610,7 @@ func (s *UDPSession) SetWriteBuffer(bytes int) error {
 func (s *UDPSession) postProcess() {
 	txqueue := make([]ipv4.Message, 0, acceptBacklog)
 	chCork := make(chan struct{}, 1)
+	chDie := s.die
 
 	for {
 		select {
@@ -655,6 +669,9 @@ func (s *UDPSession) postProcess() {
 				}
 			}
 
+			// re-enable die channel
+			chDie = s.die
+
 		case <-chCork: // emulate a corked socket
 			if len(txqueue) > 0 {
 				s.tx(txqueue)
@@ -666,7 +683,15 @@ func (s *UDPSession) postProcess() {
 				txqueue = txqueue[:0]
 			}
 
-		case <-s.die:
+			// re-enable die channel
+			chDie = s.die
+
+		case <-chDie:
+			// remaining packets in txqueue should be sent out
+			if len(chCork) > 0 || len(s.chPostProcessing) > 0 {
+				chDie = nil // block chDie temporarily
+				continue
+			}
 			return
 		}
 	}
@@ -1070,6 +1095,14 @@ func (l *Listener) Close() error {
 		err = errors.WithStack(io.ErrClosedPipe)
 	}
 	return err
+}
+
+// Control applys a procedure to the underly socket fd.
+// CAUTION: BE VERY CAREFUL TO USE THIS FUNCTION, YOU MAY BREAK THE PROTOCOL.
+func (l *Listener) Control(f func(conn net.PacketConn) error) error {
+	l.sessionLock.Lock()
+	defer l.sessionLock.Unlock()
+	return f(l.conn)
 }
 
 // closeSession notify the listener that a session has closed
