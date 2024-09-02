@@ -213,7 +213,7 @@ func NewKCP(conv uint32, output output_callback) *KCP {
 // GetSegmentSize gets the size in bytes of a KCP segment
 func (kcp *KCP) GetSegmentSize() uint32 {
 	var seg segment
-	return uint32(unsafe.Sizeof(seg))
+	return uint32(unsafe.Sizeof(seg)-unsafe.Sizeof(seg.data))
 }
 
 // newSegment creates a KCP segment
