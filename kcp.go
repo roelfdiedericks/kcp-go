@@ -30,9 +30,9 @@ import (
 )
 
 const (
-	IKCP_RTO_NDL     = 30  // no delay min rto
-	IKCP_RTO_MIN     = 100 // normal min rto
-	IKCP_RTO_DEF     = 200
+	IKCP_RTO_NDL     = 500  // no delay min rto
+	IKCP_RTO_MIN     = 800 // normal min rto
+	IKCP_RTO_DEF     = 1000
 	IKCP_RTO_MAX     = 60000
 	IKCP_CMD_PUSH    = 81 // cmd: push data
 	IKCP_CMD_ACK     = 82 // cmd: ack
