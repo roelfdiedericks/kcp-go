@@ -235,8 +235,10 @@ func newUDPSession(conv uint32, dataShards, parityShards int, l *Listener, conn 
 	if sess.l == nil { // it's a client connection
 		go sess.readLoop()
 		atomic.AddUint64(&DefaultSnmp.ActiveOpens, 1)
+		atomic.AddUint64(&sess.kcp.snmp.ActiveOpens, 1)
 	} else {
 		atomic.AddUint64(&DefaultSnmp.PassiveOpens, 1)
+		atomic.AddUint64(&sess.kcp.snmp.PassiveOpens, 1)
 	}
 
 	// start per-session updater
@@ -246,6 +248,11 @@ func newUDPSession(conv uint32, dataShards, parityShards int, l *Listener, conn 
 	maxconn := atomic.LoadUint64(&DefaultSnmp.MaxConn)
 	if currestab > maxconn {
 		atomic.CompareAndSwapUint64(&DefaultSnmp.MaxConn, maxconn, currestab)
+	}
+	currestab2 := atomic.AddUint64(&sess.kcp.snmp.CurrEstab, 1)
+	maxconn2 := atomic.LoadUint64(&sess.kcp.snmp.MaxConn)
+	if currestab2 > maxconn2 {
+		atomic.CompareAndSwapUint64(&sess.kcp.snmp.MaxConn, maxconn2, currestab2)
 	}
 
 	return sess
@@ -274,6 +281,7 @@ RESET_TIMER:
 			s.bufptr = s.bufptr[n:]
 			s.mu.Unlock()
 			atomic.AddUint64(&DefaultSnmp.BytesReceived, uint64(n))
+			atomic.AddUint64(&s.kcp.snmp.BytesReceived, uint64(n))
 			return n, nil
 		}
 
@@ -284,6 +292,7 @@ RESET_TIMER:
 				s.kcp.Recv(b)
 				s.mu.Unlock()
 				atomic.AddUint64(&DefaultSnmp.BytesReceived, uint64(size))
+				atomic.AddUint64(&s.kcp.snmp.BytesReceived, uint64(size))
 				return size, nil
 			}
 
@@ -302,6 +311,7 @@ RESET_TIMER:
 
 			s.mu.Unlock()
 			atomic.AddUint64(&DefaultSnmp.BytesReceived, uint64(n))
+			atomic.AddUint64(&s.kcp.snmp.BytesReceived, uint64(n))
 			return n, nil
 		}
 
@@ -379,6 +389,7 @@ RESET_TIMER:
 			}
 			s.mu.Unlock()
 			atomic.AddUint64(&DefaultSnmp.BytesSent, uint64(n))
+			atomic.AddUint64(&s.kcp.snmp.BytesSent, uint64(n))
 			return n, nil
 		}
 
@@ -412,6 +423,7 @@ func (s *UDPSession) Close() error {
 
 	if once {
 		atomic.AddUint64(&DefaultSnmp.CurrEstab, ^uint64(0))
+		atomic.AddUint64(&s.kcp.snmp.CurrEstab, ^uint64(0))
 
 		// try best to send all queued messages especially the data in txqueue
 		s.mu.Lock()
@@ -721,13 +733,8 @@ func (s *UDPSession) GetConv() uint32 { return s.kcp.conv }
 // mostly useful for "dead" state = 0xFFFFFFFF dead_link after 20 unacks ?
 func (s *UDPSession) GetState() uint32 { return s.kcp.state }
 
-// GetSegmentSize gets the size in bytes of kcp segment
-func (s *UDPSession) GetSegmentSize() uint32 { 
-	return s.kcp.GetSegmentSize()
-}
-
 // GetSnmp gets the snmp table of a session
-func (s *UDPSession) GetSnmp() *Snmp { return &s.kcp.snmp }
+func (s *UDPSession) GetSnmp() *Snmp { 	return &s.kcp.snmp }
 
 // GetRTO gets current rto of the session
 func (s *UDPSession) GetRTO() uint32 {
@@ -791,6 +798,7 @@ func (s *UDPSession) packetInput(data []byte) {
 			decrypted = true
 		} else {
 			atomic.AddUint64(&DefaultSnmp.InCsumErrors, 1)
+			atomic.AddUint64(&s.kcp.snmp.InCsumErrors, 1)
 		}
 	} else if s.block == nil {
 		decrypted = true
@@ -862,6 +870,7 @@ func (s *UDPSession) kcpInput(data []byte) {
 			s.mu.Unlock()
 		} else {
 			atomic.AddUint64(&DefaultSnmp.InErrs, 1)
+			atomic.AddUint64(&s.kcp.snmp.InErrs, 1)
 		}
 	} else {
 		s.mu.Lock()
@@ -880,17 +889,23 @@ func (s *UDPSession) kcpInput(data []byte) {
 
 	atomic.AddUint64(&DefaultSnmp.InPkts, 1)
 	atomic.AddUint64(&DefaultSnmp.InBytes, uint64(len(data)))
+	atomic.AddUint64(&s.kcp.snmp.InPkts, 1)
+	atomic.AddUint64(&s.kcp.snmp.InBytes, uint64(len(data)))
 	if fecParityShards > 0 {
 		atomic.AddUint64(&DefaultSnmp.FECParityShards, fecParityShards)
+		atomic.AddUint64(&s.kcp.snmp.FECParityShards, fecParityShards)
 	}
 	if kcpInErrors > 0 {
 		atomic.AddUint64(&DefaultSnmp.KCPInErrors, kcpInErrors)
+		atomic.AddUint64(&s.kcp.snmp.KCPInErrors, kcpInErrors)
 	}
 	if fecErrs > 0 {
 		atomic.AddUint64(&DefaultSnmp.FECErrs, fecErrs)
+		atomic.AddUint64(&s.kcp.snmp.FECErrs, fecErrs)
 	}
 	if fecRecovered > 0 {
 		atomic.AddUint64(&DefaultSnmp.FECRecovered, fecRecovered)
+		atomic.AddUint64(&s.kcp.snmp.FECRecovered, fecRecovered)
 	}
 
 }
