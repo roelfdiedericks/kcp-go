@@ -736,6 +736,9 @@ func (s *UDPSession) GetState() uint32 { return s.kcp.state }
 // GetSnmp gets the snmp table of a session
 func (s *UDPSession) GetSnmp() *Snmp { 	return &s.kcp.snmp }
 
+// SetDeadlink sets the number of segments to consider a link dead
+func (s *UDPSession) SetDeadlink(deadlink uint32) *Snmp { s.kcp.dead_link=deadlink }
+
 // GetRTO gets current rto of the session
 func (s *UDPSession) GetRTO() uint32 {
 	s.mu.Lock()
