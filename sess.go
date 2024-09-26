@@ -512,7 +512,7 @@ func (s *UDPSession) SetMtu(mtu int) bool {
 }
 
 // Releases the TX Queue
-func (s *UDPSession) ReleaseTX(mtu int) bool {
+func (s *UDPSession) ReleaseTX() bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.kcp.ReleaseTX()
