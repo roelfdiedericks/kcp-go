@@ -511,6 +511,14 @@ func (s *UDPSession) SetMtu(mtu int) bool {
 	return true
 }
 
+// Releases the TX Queue
+func (s *UDPSession) ReleaseTX(mtu int) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.kcp.ReleaseTX()
+	return true
+}
+
 // SetStreamMode toggles the stream mode on/off
 func (s *UDPSession) SetStreamMode(enable bool) {
 	s.mu.Lock()
