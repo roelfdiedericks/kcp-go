@@ -506,6 +506,7 @@ func (s *UDPSession) SetMtu(mtu int) bool {
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	s.kcp.ReleaseTX() //rodent: kill any segments when changing mtu
 	s.kcp.SetMtu(mtu)
 	return true
 }
