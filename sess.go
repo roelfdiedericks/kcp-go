@@ -711,7 +711,7 @@ func (s *UDPSession) postProcess() {
 }
 
 // sess update to trigger protocol
-func (s *UDPSession) update() {
+func (s *UDPSession) Update() {
 	select {
 	case <-s.die:
 	default:
