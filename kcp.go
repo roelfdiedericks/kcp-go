@@ -1017,7 +1017,7 @@ func (kcp *KCP) SetMtu(mtu int) int {
 	if mtu < 50 || mtu < IKCP_OVERHEAD {
 		return -1
 	}
-	kcp.flush(true)
+	kcp.flush(false)
 	buffer := make([]byte, mtu)
 	if buffer == nil {
 		return -2
