@@ -243,7 +243,7 @@ func (kcp *KCP) PeekSize() (length int) {
 	}
 
 	if len(kcp.rcv_queue) < int(seg.frg+1) {
-		return -1
+		return -2
 	}
 
 	for k := range kcp.rcv_queue {
@@ -1017,7 +1017,6 @@ func (kcp *KCP) SetMtu(mtu int) int {
 	if mtu < 50 || mtu < IKCP_OVERHEAD {
 		return -1
 	}
-	kcp.flush(false)
 	buffer := make([]byte, mtu)
 	if buffer == nil {
 		return -2
