@@ -1025,6 +1025,13 @@ func (kcp *KCP) SetMtu(mtu int) int {
 	kcp.mtu = uint32(mtu)
 	kcp.mss = kcp.mtu - IKCP_OVERHEAD
 	kcp.buffer = buffer
+
+	//try clear up the rcv queue?
+	for k := range kcp.rcv_queue {
+		seg := &kcp.rcv_queue[k]
+		kcp.delSegment(seg)
+
+	}
 	return 0
 }
 
