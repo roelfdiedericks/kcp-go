@@ -1025,6 +1025,8 @@ func (kcp *KCP) SetMtu(mtu int) int {
 	kcp.mtu = uint32(mtu)
 	kcp.mss = kcp.mtu - IKCP_OVERHEAD
 	kcp.buffer = buffer
+	kcp.rcv_nxt=0
+	kcp.snd_nxt=0
 	return 0
 }
 
