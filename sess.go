@@ -525,6 +525,12 @@ func (s *UDPSession) GetSendQueueLength() int {
 	
 	return s.kcp.GetSendQueueLength()
 }
+func (s *UDPSession) GetSendBufLength() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	
+	return s.kcp.GetSendBufLength()
+}
 
 // SetStreamMode toggles the stream mode on/off
 func (s *UDPSession) SetStreamMode(enable bool) {

@@ -1114,3 +1114,13 @@ func (kcp *KCP) GetSendQueueLength() int {
 	}
 	return l
 }
+
+func (kcp *KCP) GetSendBufLength() int {
+	l:=0;
+	for k := range kcp.snd_buf {
+		if kcp.snd_buf[k].data != nil {
+			l=l+len(kcp.snd_buf[k].data)
+		}
+	}
+	return l
+}
