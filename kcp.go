@@ -1114,6 +1114,16 @@ func (kcp *KCP) GetSendQueueLength() int {
 	return l
 }
 
+func (kcp *KCP) GetReceiveQueueLength() int {
+	l:=0;
+	for k := range kcp.rcv_queue {
+		if kcp.rcv_queue[k].data != nil {
+			l=l+len(kcp.rcv_queue[k].data)
+		}
+	}
+	return l
+}
+
 func (kcp *KCP) GetSendBufLength() int {
 	l:=0;
 	for k := range kcp.snd_buf {

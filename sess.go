@@ -525,6 +525,13 @@ func (s *UDPSession) GetSendQueueLength() int {
 	
 	return s.kcp.GetSendQueueLength()
 }
+
+func (s *UDPSession) GetReceiveQueueLength() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	
+	return s.kcp.GetSendQueueLength()
+}
 func (s *UDPSession) GetSendBufLength() int {
 	s.mu.Lock()
 	defer s.mu.Unlock()
