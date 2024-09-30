@@ -1104,3 +1104,13 @@ func (kcp *KCP) ReleaseTX() {
 	kcp.snd_queue = nil
 	kcp.snd_buf = nil
 }
+
+func (kcp *KCP) GetSendQueueLength() int {
+	l:=0;
+	for k := range kcp.snd_queue {
+		if kcp.snd_queue[k].data != nil {
+			l=l+len(kcp.snd_queue[k].data)
+		}
+	}
+	return l
+}

@@ -519,6 +519,13 @@ func (s *UDPSession) ReleaseTX() bool {
 	return true
 }
 
+func (s *UDPSession) GetSendQueueLength() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	
+	return s.kcp.GetSendQueueLength()
+}
+
 // SetStreamMode toggles the stream mode on/off
 func (s *UDPSession) SetStreamMode(enable bool) {
 	s.mu.Lock()
