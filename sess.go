@@ -532,6 +532,10 @@ func (s *UDPSession) GetSendBufLength() int {
 	return s.kcp.GetSendBufLength()
 }
 
+func (s *UDPSession) PeekSize() int {
+	return s.kcp.PeekSize()
+}
+
 // SetStreamMode toggles the stream mode on/off
 func (s *UDPSession) SetStreamMode(enable bool) {
 	s.mu.Lock()
