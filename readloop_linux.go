@@ -38,6 +38,7 @@ import (
 // readLoop is the optimized version of readLoop for linux utilizing recvmmsg syscall
 func (s *UDPSession) readLoop() {
 	// default version
+	s.defaultReadLoop()
 	if s.xconn == nil {
 		s.defaultReadLoop()
 		return
